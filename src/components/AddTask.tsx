@@ -8,15 +8,13 @@ import { Checkbox } from './ui/checkbox'
 import { Todo, todoSchema } from '@/lib/schema/todoSchema'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
-import { z } from 'zod'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
-import useStore from '@/store/todoStore'
+import { useAddTodo } from '@/hooks/queries/todos'
 
 const AddTask = () => {
-
-    const {applyUpdates} = useStore()
-
-    const form = useForm<z.infer<typeof todoSchema>>({
+    const addTodo = useAddTodo()
+    
+    const form = useForm<Todo>({
         resolver: zodResolver(todoSchema),
         defaultValues: {
             title: '',
@@ -24,12 +22,23 @@ const AddTask = () => {
             completed: false
         }
     })
+
     const handleSubmit = (values: Todo) => {
+        console.log('Submitting values:', values)
         
-        applyUpdates({
-            title : values.title,
-            description : values.description,
-            completed : values.completed
+        // Transform empty description to undefined
+        const todoData = {
+            ...values,
+            description: values.description === '' ? undefined : values.description
+        }
+        
+        addTodo.mutate(todoData, {
+            onSuccess: () => {
+                form.reset()
+            },
+            onError: (error) => {
+                console.error('Error adding todo:', error)
+            }
         })
     }
     
